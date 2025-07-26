@@ -2,7 +2,7 @@
 
 🏗️ **Understand your code's infrastructure intent with semantic tags**
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/coscatech/semantic-tagging-vscode)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/coscatech/semantic-tags-plugin)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![COSCA](https://img.shields.io/badge/COSCA-Purpose--Driven%20Infrastructure-purple.svg)](https://github.com/coscatech)
 
@@ -56,7 +56,7 @@ Unlike generic code analysis tools, Semantic Tagging focuses on **infrastructure
 4. Click Install
 
 ### From Release
-1. Download `.vsix` file from [Releases](https://github.com/coscatech/semantic-tagging-vscode/releases)
+1. Download `.vsix` file from [Releases](https://github.com/coscatech/semantic-tags-plugin/releases)
 2. Run: `code --install-extension semantic-tagging-vscode-0.1.0.vsix`
 
 ### Development
@@ -168,8 +168,8 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🔗 Links
 
-- **GitHub**: [coscatech/semantic-tagging-vscode](https://github.com/coscatech/semantic-tagging-vscode)
-- **Issues**: [Report bugs or request features](https://github.com/coscatech/semantic-tagging-vscode/issues)
+- **GitHub**: [coscatech/semantic-tags-plugin](https://github.com/coscatech/semantic-tags-plugin)
+- **Issues**: [Report bugs or request features](https://github.com/coscatech/semantic-tags-plugin/issues)
 - **COSCA**: [Learn more about purpose-driven infrastructure](https://github.com/coscatech)
 
 ---

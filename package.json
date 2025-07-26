@@ -6,7 +6,7 @@
   "publisher": "cosca",
   "repository": {
     "type": "git",
-    "url": "https://github.com/coscatech/semantic-tagging-vscode.git"
+    "url": "https://github.com/coscatech/semantic-tags-plugin.git"
   },
   "license": "MIT",
   "engines": {
@@ -25,9 +25,9 @@
     "purpose-driven",
     "code-analysis"
   ],
-  "homepage": "https://github.com/coscatech/semantic-tagging-vscode#readme",
+  "homepage": "https://github.com/coscatech/semantic-tags-plugin#readme",
   "bugs": {
-    "url": "https://github.com/coscatech/semantic-tagging-vscode/issues"
+    "url": "https://github.com/coscatech/semantic-tags-plugin/issues"
   },
   "activationEvents": [
     "onStartupFinished"
