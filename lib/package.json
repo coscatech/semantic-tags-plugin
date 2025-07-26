@@ -1,0 +1,45 @@
+{
+  "name": "cosca-semantic-tags",
+  "version": "1.0.0",
+  "description": "Infrastructure semantic tagging engine for purpose-driven code analysis",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "node test/test.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "semantic",
+    "tagging",
+    "infrastructure",
+    "cosca",
+    "code-analysis",
+    "iac",
+    "terraform",
+    "kubernetes"
+  ],
+  "author": "COSCA <dev@cosca.tech>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coscatech/semantic-tags-plugin.git",
+    "directory": "lib"
+  },
+  "homepage": "https://github.com/coscatech/semantic-tags-plugin/tree/main/lib#readme",
+  "bugs": {
+    "url": "https://github.com/coscatech/semantic-tags-plugin/issues"
+  },
+  "devDependencies": {
+    "typescript": "^4.9.4",
+    "@types/node": "^16.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
