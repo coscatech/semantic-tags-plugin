@@ -1,0 +1,73 @@
+{
+  "name": "semantic-tagging-vscode",
+  "displayName": "Semantic Tagging",
+  "description": "Understand your code's intent with semantic tags",
+  "version": "0.1.0",
+  "publisher": "cosca",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coscatech/semantic-tagging-vscode.git"
+  },
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other",
+    "Linters",
+    "Visualization"
+  ],
+  "keywords": [
+    "semantic",
+    "tagging",
+    "infrastructure",
+    "cosca",
+    "purpose-driven",
+    "code-analysis"
+  ],
+  "homepage": "https://github.com/coscatech/semantic-tagging-vscode#readme",
+  "bugs": {
+    "url": "https://github.com/coscatech/semantic-tagging-vscode/issues"
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "semanticTagging.scanFile",
+        "title": "Scan Current File",
+        "category": "Semantic Tagging"
+      },
+      {
+        "command": "semanticTagging.showInsights",
+        "title": "Show Semantic Insights",
+        "category": "Semantic Tagging"
+      }
+    ],
+    "configuration": {
+      "title": "Semantic Tagging",
+      "properties": {
+        "semanticTagging.enableTelemetry": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable anonymous telemetry to help improve semantic tagging"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "16.x",
+    "typescript": "^4.9.4"
+  },
+  "dependencies": {
+    "posthog-node": "^3.0.0"
+  }
+}

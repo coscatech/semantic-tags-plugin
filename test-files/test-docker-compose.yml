@@ -1,0 +1,219 @@
+# Container/K8s - should be tagged as "Container/K8s"
+version: '3.8'
+
+services:
+  # Container/K8s
+  web:
+    # Container/K8s
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    
+    # Configuration
+    environment:
+      - NODE_ENV=production
+      - API_URL=http://api:3000
+    
+    # Compute Resource
+    deploy:
+      resources:
+        limits:
+          # Compute Resource
+          cpus: '0.5'
+          # Compute Resource
+          memory: 512M
+        reservations:
+          # Compute Resource
+          cpus: '0.25'
+          # Compute Resource
+          memory: 256M
+    
+    labels:
+      # Resource Purpose
+      - "purpose=web_frontend"
+      # Resource Owner
+      - "owner=frontend_team"
+      # Resource Expiry
+      - "expiry=30_days"
+    
+    # Storage Operation
+    volumes:
+      - web_data:/var/www/html
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    
+    # Container/K8s
+    depends_on:
+      - api
+      - database
+
+  # Container/K8s
+  api:
+    # Container/K8s
+    build: 
+      context: ./api
+      # Container/K8s
+      dockerfile: Dockerfile
+    
+    # Configuration
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@database:5432/app
+      - REDIS_URL=redis://cache:6379
+      - JWT_SECRET=${JWT_SECRET}
+    
+    # Compute Resource
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          # Compute Resource
+          cpus: '1.0'
+          # Compute Resource
+          memory: 1G
+    
+    labels:
+      # Resource Purpose
+      - "purpose=api_backend"
+      # Resource Owner
+      - "owner=backend_team"
+      # Resource Expiry
+      - "expiry=90_days"
+    
+    # Container/K8s
+    depends_on:
+      - database
+      - cache
+
+  # Storage Operation
+  database:
+    # Container/K8s
+    image: postgres:14
+    
+    # Configuration
+    environment:
+      - POSTGRES_DB=app
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    
+    # Storage Operation
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    
+    # Compute Resource
+    deploy:
+      resources:
+        limits:
+          # Compute Resource
+          memory: 2G
+          # Compute Resource
+          cpus: '1.0'
+    
+    labels:
+      # Resource Purpose
+      - "purpose=data_persistence"
+      # Resource Owner
+      - "owner=data_team"
+      # Resource Expiry
+      - "expiry=1_year"
+
+  # Container/K8s
+  cache:
+    # Container/K8s
+    image: redis:7-alpine
+    
+    # Configuration
+    command: redis-server --appendonly yes
+    
+    # Storage Operation
+    volumes:
+      - redis_data:/data
+    
+    # Compute Resource
+    deploy:
+      resources:
+        limits:
+          # Compute Resource
+          memory: 512M
+          # Compute Resource
+          cpus: '0.5'
+    
+    labels:
+      # Resource Purpose
+      - "purpose=caching_layer"
+      # Resource Owner
+      - "owner=backend_team"
+      # Resource Expiry
+      - "expiry=60_days"
+
+  # Observability
+  prometheus:
+    # Container/K8s
+    image: prom/prometheus:latest
+    
+    # Configuration
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    
+    # Storage Operation
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    
+    ports:
+      - "9090:9090"
+    
+    labels:
+      # Resource Purpose
+      - "purpose=monitoring"
+      # Resource Owner
+      - "owner=sre_team"
+      # Resource Expiry
+      - "expiry=indefinite"
+
+  # Observability
+  grafana:
+    # Container/K8s
+    image: grafana/grafana:latest
+    
+    # Configuration
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    
+    # Storage Operation
+    volumes:
+      - grafana_data:/var/lib/grafana
+    
+    ports:
+      - "3000:3000"
+    
+    labels:
+      # Resource Purpose
+      - "purpose=dashboard"
+      # Resource Owner
+      - "owner=sre_team"
+
+# Storage Operation
+volumes:
+  web_data:
+    labels:
+      # Resource Purpose
+      - "purpose=static_assets"
+  postgres_data:
+    labels:
+      # Resource Purpose
+      - "purpose=database_storage"
+  redis_data:
+    labels:
+      # Resource Purpose
+      - "purpose=cache_storage"
+  prometheus_data:
+    labels:
+      # Resource Purpose
+      - "purpose=metrics_storage"
+  grafana_data:
+    labels:
+      # Resource Purpose
+      - "purpose=dashboard_config"
