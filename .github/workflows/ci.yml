@@ -25,13 +25,23 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     
-    - name: Install dependencies
+    - name: Install VSCode extension dependencies
       run: npm ci
     
-    - name: Compile TypeScript
+    - name: Compile VSCode extension
       run: npm run compile
     
-    - name: Package extension
+    - name: Install npm package dependencies
+      run: |
+        cd lib
+        npm ci
+    
+    - name: Build npm package
+      run: |
+        cd lib
+        npm run build
+    
+    - name: Package VSCode extension
       run: |
         npm install -g @vscode/vsce
         vsce package
@@ -57,13 +67,19 @@ jobs:
         node-version: 20.x
         cache: 'npm'
     
-    - name: Install dependencies
+    - name: Install VSCode extension dependencies
       run: npm ci
     
-    - name: Compile TypeScript
+    - name: Compile VSCode extension
       run: npm run compile
     
-    - name: Package extension
+    - name: Build npm package
+      run: |
+        cd lib
+        npm ci
+        npm run build
+    
+    - name: Package VSCode extension
       run: |
         npm install -g @vscode/vsce
         vsce package
