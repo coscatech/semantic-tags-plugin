@@ -20,7 +20,8 @@ export class TelemetryService {
 
         if (telemetryEnabled) {
             try {
-                // Replace with your actual PostHog API key
+                // COSCA PostHog API key - intentionally hardcoded for telemetry collection
+                // This allows COSCA to gather anonymous usage analytics from extension users
                 this.posthog = new PostHog('phc_QoS8jgQeFmZyZ9zktO2P49DseXvcj1Ai5IWww6O4URG', {
                     host: 'https://app.posthog.com',
                     flushAt: 1, // Send events immediately for testing

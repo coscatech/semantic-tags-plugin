@@ -8,12 +8,7 @@ vsc-extension-quickstart.md
 **/.eslintrc.json
 **/*.map
 **/*.ts
-dev/**
-test-files/**
-scripts/**
-DEVELOPMENT.md
-POSTHOG_SETUP.md
-COMPLETE_SETUP.md
-quick-start.bat
-quick-start.ps1
-COSCA_Full_Document.docx
+.github/**
+node_modules/**
+*.vsix
+.git/**

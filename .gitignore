@@ -45,4 +45,7 @@ jspm_packages/
 
 # Development files (keep these local)
 dev/
-COSCA_Full_Document.docx
+test-files/
+*.docx
+*-setup.*
+test-*.js

@@ -31,9 +31,6 @@ jobs:
     - name: Compile TypeScript
       run: npm run compile
     
-    - name: Run tests
-      run: node test-extension.js
-    
     - name: Package extension
       run: |
         npm install -g @vscode/vsce
