@@ -40,61 +40,61 @@ export class SemanticTagger {
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             
-            // Network calls
-            this.findPattern(line, i, /\b(fetch|axios|http\.get|http\.post|XMLHttpRequest)\b/gi, 'network', 'Network Call', tags);
+            // External Communication Intent
+            this.findPattern(line, i, /\b(fetch|axios|http\.get|http\.post|XMLHttpRequest)\b/gi, 'network', 'External Communication', tags);
             
-            // Debug statements
-            this.findPattern(line, i, /\b(console\.log|console\.error|console\.warn|print|println|debugger)\b/gi, 'debug', 'Debug Statement', tags);
+            // Development Insights
+            this.findPattern(line, i, /\b(console\.log|console\.error|console\.warn|print|println|debugger)\b/gi, 'debug', 'Development Insight', tags);
             
-            // TODOs and FIXMEs
-            this.findPattern(line, i, /\b(TODO|FIXME|HACK|XXX|NOTE)\b/gi, 'todo', 'Unfinished Block', tags);
+            // Future Intentions
+            this.findPattern(line, i, /\b(TODO|FIXME|HACK|XXX|NOTE)\b/gi, 'todo', 'Future Intention', tags);
             
-            // Database operations
-            this.findPattern(line, i, /\b(SELECT|INSERT|UPDATE|DELETE|query|findOne|save|create)\b/gi, 'database', 'Database Operation', tags);
+            // Data Interactions
+            this.findPattern(line, i, /\b(SELECT|INSERT|UPDATE|DELETE|query|findOne|save|create)\b/gi, 'database', 'Data Interaction', tags);
             
-            // Error handling
-            this.findPattern(line, i, /\b(try|catch|throw|error|exception)\b/gi, 'error', 'Error Handling', tags);
+            // Resilience Patterns
+            this.findPattern(line, i, /\b(try|catch|throw|error|exception)\b/gi, 'error', 'Resilience Pattern', tags);
             
-            // Authentication
-            this.findPattern(line, i, /\b(auth|login|logout|token|jwt|session|password)\b/gi, 'auth', 'Authentication', tags);
+            // Identity Verification
+            this.findPattern(line, i, /\b(auth|login|logout|token|jwt|session|password)\b/gi, 'auth', 'Identity Verification', tags);
             
-            // Configuration
-            this.findPattern(line, i, /\b(config|env|process\.env|settings|options)\b/gi, 'config', 'Configuration', tags);
+            // Behavior Configuration
+            this.findPattern(line, i, /\b(config|env|process\.env|settings|options)\b/gi, 'config', 'Behavior Configuration', tags);
             
-            // Infrastructure as Code
-            this.findPattern(line, i, /\b(terraform|pulumi|cloudformation|aws_|azure_|gcp_|resource|provider)\b/gi, 'iac', 'Infrastructure as Code', tags);
+            // Infrastructure Declaration
+            this.findPattern(line, i, /\b(terraform|pulumi|cloudformation|aws_|azure_|gcp_|resource|provider)\b/gi, 'iac', 'Infrastructure Declaration', tags);
             
-            // Cloud Services
-            this.findPattern(line, i, /\b(s3|ec2|lambda|rds|dynamodb|sqs|sns|cloudwatch|ecs|eks|fargate)\b/gi, 'cloud', 'Cloud Service', tags);
+            // Cloud Service Intent
+            this.findPattern(line, i, /\b(s3|ec2|lambda|rds|dynamodb|sqs|sns|cloudwatch|ecs|eks|fargate)\b/gi, 'cloud', 'Cloud Service Intent', tags);
             
-            // Container/Orchestration
-            this.findPattern(line, i, /\b(docker|kubernetes|k8s|pod|deployment|service|ingress|helm)\b/gi, 'container', 'Container/K8s', tags);
+            // Orchestration Intent
+            this.findPattern(line, i, /\b(docker|kubernetes|k8s|pod|deployment|service|ingress|helm)\b/gi, 'container', 'Orchestration Intent', tags);
             
-            // Compute Resources
-            this.findPattern(line, i, /\b(cpu|memory|gpu|instance|cluster|node|worker|scale)\b/gi, 'compute', 'Compute Resource', tags);
+            // Compute Requirements
+            this.findPattern(line, i, /\b(cpu|memory|gpu|instance|cluster|node|worker|scale)\b/gi, 'compute', 'Compute Requirement', tags);
             
-            // Storage Operations
-            this.findPattern(line, i, /\b(bucket|volume|disk|storage|backup|snapshot|archive)\b/gi, 'storage', 'Storage Operation', tags);
+            // Data Persistence Intent
+            this.findPattern(line, i, /\b(bucket|volume|disk|storage|backup|snapshot|archive)\b/gi, 'storage', 'Data Persistence Intent', tags);
             
-            // Monitoring/Observability
-            this.findPattern(line, i, /\b(metrics|logs|traces|alert|monitor|dashboard|prometheus|grafana)\b/gi, 'observability', 'Observability', tags);
+            // Visibility Intent
+            this.findPattern(line, i, /\b(metrics|logs|traces|alert|monitor|dashboard|prometheus|grafana)\b/gi, 'observability', 'Visibility Intent', tags);
             
-            // Resource Lifecycle
-            this.findPattern(line, i, /\b(create|destroy|provision|deprovision|scale_up|scale_down|terminate)\b/gi, 'lifecycle', 'Resource Lifecycle', tags);
+            // Resource Lifecycle Intent
+            this.findPattern(line, i, /\b(create|destroy|provision|deprovision|scale_up|scale_down|terminate)\b/gi, 'lifecycle', 'Resource Lifecycle Intent', tags);
             
-            // Cost/Billing
-            this.findPattern(line, i, /\b(cost|billing|budget|pricing|reserved|spot|savings)\b/gi, 'cost', 'Cost Management', tags);
+            // Economic Considerations
+            this.findPattern(line, i, /\b(cost|billing|budget|pricing|reserved|spot|savings)\b/gi, 'cost', 'Economic Consideration', tags);
             
-            // Security/Compliance
-            this.findPattern(line, i, /\b(iam|role|policy|security_group|vpc|encryption|compliance)\b/gi, 'security', 'Security/Compliance', tags);
+            // Security Boundaries
+            this.findPattern(line, i, /\b(iam|role|policy|security_group|vpc|encryption|compliance)\b/gi, 'security', 'Security Boundary', tags);
             
-            // ML/AI Infrastructure
-            this.findPattern(line, i, /\b(model|training|inference|gpu_cluster|sagemaker|ml_pipeline)\b/gi, 'ml_infra', 'ML Infrastructure', tags);
+            // Intelligence Infrastructure
+            this.findPattern(line, i, /\b(model|training|inference|gpu_cluster|sagemaker|ml_pipeline)\b/gi, 'ml_infra', 'Intelligence Infrastructure', tags);
             
-            // Purpose Tags (COSCA-specific)
-            this.findPattern(line, i, /purpose\s*[:=]\s*["']([^"']+)["']/gi, 'purpose', 'Resource Purpose', tags);
-            this.findPattern(line, i, /expiry\s*[:=]\s*["']([^"']+)["']/gi, 'expiry', 'Resource Expiry', tags);
-            this.findPattern(line, i, /owner\s*[:=]\s*["']([^"']+)["']/gi, 'owner', 'Resource Owner', tags);
+            // Purpose-Driven Metadata (COSCA-specific)
+            this.findPattern(line, i, /purpose\s*[:=]\s*["']([^"']+)["']/gi, 'purpose', 'Declared Purpose', tags);
+            this.findPattern(line, i, /expiry\s*[:=]\s*["']([^"']+)["']/gi, 'expiry', 'Lifecycle Expectation', tags);
+            this.findPattern(line, i, /owner\s*[:=]\s*["']([^"']+)["']/gi, 'owner', 'Responsibility Assignment', tags);
         }
 
         return tags;
@@ -184,28 +184,29 @@ export class SemanticTagger {
             </style>
         </head>
         <body>
-            <h1>🏷️ Semantic Insights - COSCA Edition</h1>
+            <h1>🧠 Semantic Reflection - COSCA Edition</h1>
             
             <div class="section">
-                <h2>📊 Overview</h2>
+                <h2>💭 Intent Overview</h2>
                 <div class="metric">
-                    <h3>Total Semantic Tags: ${insights.totalTags}</h3>
+                    <h3>Semantic Insights Discovered: ${insights.totalTags}</h3>
+                    <p>Reflecting on the deeper meaning behind your code patterns</p>
                 </div>
             </div>
 
             <div class="section">
-                <h2>🏗️ Infrastructure Insights</h2>
+                <h2>🏗️ Infrastructure Intent</h2>
                 <div class="infra-metric">
-                    <h3>Infrastructure Tags: ${infraTagCount}</h3>
-                    <p>${infraTagCount > 0 ? '✅ Infrastructure patterns detected' : '❌ No infrastructure patterns found'}</p>
+                    <h3>Infrastructure Intentions: ${infraTagCount}</h3>
+                    <p>${infraTagCount > 0 ? '✅ Your code expresses clear infrastructure intent' : '💭 Consider adding infrastructure declarations'}</p>
                 </div>
                 
                 ${infraTagCount > 0 ? `
                 <div class="chart">
-                    <h3>Infrastructure Patterns</h3>
+                    <h3>Infrastructure Thinking Patterns</h3>
                     ${infraTags.filter(type => insights.tagCounts[type] > 0).map(type => `
                         <div>
-                            <strong>${type}</strong>: ${insights.tagCounts[type]}
+                            <strong>${type}</strong>: ${insights.tagCounts[type]} reflections
                             <div class="infra-bar" style="width: ${(insights.tagCounts[type] / infraTagCount) * 100}%"></div>
                         </div>
                     `).join('')}
@@ -214,49 +215,49 @@ export class SemanticTagger {
             </div>
 
             <div class="section">
-                <h2>🎯 Purpose-Driven Metadata</h2>
+                <h2>🎯 Purpose Reflection</h2>
                 <div class="purpose-metric">
-                    <h3>Purpose Tags: ${purposeTags}</h3>
-                    <h3>Expiry Tags: ${expiryTags}</h3>
-                    <h3>Owner Tags: ${ownerTags}</h3>
-                    <p>${(purposeTags + expiryTags + ownerTags) > 0 ? '✅ COSCA-ready metadata found' : '⚠️ Missing purpose-driven metadata'}</p>
+                    <h3>Declared Purposes: ${purposeTags}</h3>
+                    <h3>Lifecycle Expectations: ${expiryTags}</h3>
+                    <h3>Responsibility Assignments: ${ownerTags}</h3>
+                    <p>${(purposeTags + expiryTags + ownerTags) > 0 ? '✅ Your code reflects thoughtful purpose-driven design' : '💭 Consider adding purpose-driven metadata to express intent'}</p>
                 </div>
             </div>
 
             <div class="section">
-                <h2>📈 All Patterns</h2>
+                <h2>🌟 Semantic Landscape</h2>
                 <div class="chart">
-                    <h3>Top Patterns</h3>
+                    <h3>Most Prominent Intentions</h3>
                     ${insights.topPatterns.map(([type, count]: [string, number]) => {
                         const isInfra = infraTags.includes(type);
                         const isPurpose = ['purpose', 'expiry', 'owner'].includes(type);
                         const barClass = isPurpose ? 'purpose-bar' : (isInfra ? 'infra-bar' : 'bar');
                         return `
                         <div>
-                            <strong>${type}</strong>: ${count}
+                            <strong>${type}</strong>: ${count} expressions
                             <div class="${barClass}" style="width: ${(count / insights.totalTags) * 100}%"></div>
                         </div>
                     `;}).join('')}
                 </div>
 
                 <div class="metric">
-                    <h3>Complete Pattern Breakdown</h3>
+                    <h3>Complete Intent Reflection</h3>
                     <ul>
                         ${Object.entries(insights.tagCounts).map(([type, count]) => {
                             const isInfra = infraTags.includes(type);
                             const isPurpose = ['purpose', 'expiry', 'owner'].includes(type);
                             const emoji = isPurpose ? '🎯' : (isInfra ? '🏗️' : '💻');
-                            return `<li>${emoji} <strong>${type}</strong>: ${count} occurrences</li>`;
+                            return `<li>${emoji} <strong>${type}</strong>: ${count} expressions of intent</li>`;
                         }).join('')}
                     </ul>
                 </div>
             </div>
 
             <div class="section">
-                <h2>🚀 COSCA Readiness Score</h2>
+                <h2>🚀 COSCA Consciousness Score</h2>
                 <div class="purpose-metric">
                     <h3>Score: ${Math.round(((infraTagCount + purposeTags + expiryTags + ownerTags) / Math.max(insights.totalTags, 1)) * 100)}%</h3>
-                    <p>Based on infrastructure patterns and purpose-driven metadata</p>
+                    <p>Measures how consciously your code expresses infrastructure intent and purpose</p>
                 </div>
             </div>
         </body>

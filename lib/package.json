@@ -1,6 +1,6 @@
 {
   "name": "cosca-semantic-tags",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Infrastructure semantic tagging engine for purpose-driven code analysis",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -35,8 +35,10 @@
   "bugs": {
     "url": "https://github.com/coscatech/semantic-tags-plugin/issues"
   },
+  "dependencies": {
+    "typescript": "^4.9.4"
+  },
   "devDependencies": {
-    "typescript": "^4.9.4",
     "@types/node": "^16.0.0"
   },
   "engines": {

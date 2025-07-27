@@ -1,12 +1,12 @@
 # COSCA Semantic Tagging for VSCode
 
-🏗️ **Understand your code's infrastructure intent with semantic tags**
+🏗️ **Understand your code's infrastructure intent through semantic reflection**
 
 [![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/coscatech/semantic-tags-plugin)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![COSCA](https://img.shields.io/badge/COSCA-Purpose--Driven%20Infrastructure-purple.svg)](https://github.com/coscatech)
 
-Semantic Tagging is a VSCode extension that detects infrastructure patterns and purpose-driven metadata in your code. It bridges the gap between code intent and infrastructure understanding, laying the foundation for COSCA's cognitive orchestration platform.
+Semantic Tagging is a VSCode extension that reveals the deeper meaning behind your infrastructure code. Rather than just detecting patterns, it reflects on the intent - transforming technical constructs into insights about purpose, responsibility, and architectural thinking.
 
 ## 🎯 What Makes This Different
 
