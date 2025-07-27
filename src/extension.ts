@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { SemanticTagger } from './semanticTagger';
 import { TelemetryService } from './telemetry';
+import { configManager } from './config';
 
 let semanticTagger: SemanticTagger;
 let telemetryService: TelemetryService;
@@ -32,17 +33,28 @@ async function showPrivacyNoticeIfNeeded(context: vscode.ExtensionContext) {
     }
 }
 
-export function activate(context: vscode.ExtensionContext) {
-    console.log('🏷️ COSCA Semantic Tagging extension is now active');
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
+    console.log('🚀 COSCA Semantic Tagging extension is activating...');
 
-    telemetryService = new TelemetryService();
-    semanticTagger = new SemanticTagger(telemetryService);
+    try {
+        // Initialize services
+        telemetryService = new TelemetryService();
+        semanticTagger = new SemanticTagger(telemetryService);
 
-    // Show privacy notice on first run
-    showPrivacyNoticeIfNeeded(context);
-    
-    // Track extension activation
-    telemetryService.trackExtensionActivated();
+        // Show privacy notice on first run
+        await showPrivacyNoticeIfNeeded(context);
+        
+        // Track extension activation (async, don't wait)
+        telemetryService.trackExtensionActivated().catch(error => {
+            console.warn('Failed to track extension activation:', error);
+        });
+
+        console.log('✅ Semantic Tagging extension activated successfully');
+    } catch (error) {
+        console.error('❌ Failed to activate Semantic Tagging extension:', error);
+        vscode.window.showErrorMessage('Failed to activate Semantic Tagging extension. Please check the logs.');
+        throw error;
+    }
 
     // Register commands
     const scanCommand = vscode.commands.registerCommand('semanticTagging.scanFile', () => {
@@ -73,8 +85,33 @@ export function activate(context: vscode.ExtensionContext) {
     );
 }
 
-export function deactivate() {
-    if (telemetryService) {
-        telemetryService.dispose();
+export async function deactivate(): Promise<void> {
+    console.log('🔄 Deactivating Semantic Tagging extension...');
+    
+    const cleanupTasks = [];
+    
+    if (semanticTagger) {
+        try {
+            semanticTagger.dispose();
+        } catch (error) {
+            console.warn('Failed to dispose semantic tagger:', error);
+        }
     }
+    
+    if (telemetryService) {
+        cleanupTasks.push(telemetryService.dispose());
+    }
+    
+    if (configManager) {
+        try {
+            configManager.dispose();
+        } catch (error) {
+            console.warn('Failed to dispose config manager:', error);
+        }
+    }
+    
+    // Wait for all cleanup tasks to complete
+    await Promise.allSettled(cleanupTasks);
+    
+    console.log('✅ Semantic Tagging extension deactivated');
 }

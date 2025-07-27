@@ -63,6 +63,43 @@
           "type": "string",
           "default": "",
           "description": "Custom PostHog API key for self-hosted instances (leave empty to use COSCA's default)"
+        },
+        "semanticTagging.analysis.confidenceThreshold": {
+          "type": "number",
+          "default": 0.8,
+          "minimum": 0.1,
+          "maximum": 1.0,
+          "description": "Minimum confidence threshold for semantic tag detection"
+        },
+        "semanticTagging.analysis.maxFileSize": {
+          "type": "number",
+          "default": 1048576,
+          "description": "Maximum file size in bytes for semantic analysis (1MB default)"
+        },
+        "semanticTagging.analysis.debounceDelay": {
+          "type": "number",
+          "default": 300,
+          "description": "Delay in milliseconds before analyzing file changes"
+        },
+        "semanticTagging.analysis.maxCacheSize": {
+          "type": "number",
+          "default": 500,
+          "description": "Maximum number of files to cache analysis results for"
+        },
+        "semanticTagging.telemetry.batchSize": {
+          "type": "number",
+          "default": 10,
+          "description": "Number of telemetry events to batch before sending"
+        },
+        "semanticTagging.telemetry.flushInterval": {
+          "type": "number",
+          "default": 30000,
+          "description": "Interval in milliseconds to flush telemetry batches"
+        },
+        "semanticTagging.performance.maxAnalysisTime": {
+          "type": "number",
+          "default": 5000,
+          "description": "Maximum time in milliseconds for semantic analysis before timeout"
         }
       }
     }

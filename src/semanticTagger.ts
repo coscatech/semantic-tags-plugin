@@ -1,5 +1,8 @@
 import * as vscode from 'vscode';
 import { TelemetryService } from './telemetry';
+import { configManager, ExtensionConfig } from './config';
+import { LRUCache } from './utils/lruCache';
+import { ErrorClassifier } from './utils/errorHandling';
 
 export interface SemanticTag {
     type: string;
@@ -10,123 +13,244 @@ export interface SemanticTag {
     confidence: number;
 }
 
+interface CompiledPattern {
+    regex: RegExp;
+    type: string;
+    label: string;
+}
+
 export class SemanticTagger {
-    private tags: Map<string, SemanticTag[]> = new Map();
+    private cache: LRUCache<string, SemanticTag[]>;
     private decorationType: vscode.TextEditorDecorationType;
+    private config: ExtensionConfig;
+    private compiledPatterns: CompiledPattern[];
+    private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
+    private disposables: vscode.Disposable[] = [];
 
     constructor(private telemetryService: TelemetryService) {
+        this.config = configManager.getConfig();
+        this.cache = new LRUCache({
+            maxSize: this.config.analysis.maxCacheSize,
+            ttl: this.config.analysis.cacheTTL
+        });
+        
         this.decorationType = vscode.window.createTextEditorDecorationType({
             backgroundColor: 'rgba(255, 193, 7, 0.2)',
             border: '1px solid rgba(255, 193, 7, 0.5)',
             borderRadius: '3px'
         });
+
+        this.compiledPatterns = this.compilePatterns();
+        this.setupConfigListener();
+    }
+
+    private setupConfigListener(): void {
+        const disposable = vscode.commands.registerCommand('semanticTagging.configChanged', (newConfig: ExtensionConfig) => {
+            this.config = newConfig;
+            this.cache.clear(); // Clear cache when config changes
+            this.compiledPatterns = this.compilePatterns();
+        });
+        this.disposables.push(disposable);
+    }
+
+    private compilePatterns(): CompiledPattern[] {
+        return [
+            // External Communication Intent
+            { regex: /\b(fetch|axios|http\.get|http\.post|XMLHttpRequest)\b/gi, type: 'network', label: 'External Communication' },
+            
+            // Development Insights
+            { regex: /\b(console\.log|console\.error|console\.warn|print|println|debugger)\b/gi, type: 'debug', label: 'Development Insight' },
+            
+            // Future Intentions
+            { regex: /\b(TODO|FIXME|HACK|XXX|NOTE)\b/gi, type: 'todo', label: 'Future Intention' },
+            
+            // Data Interactions
+            { regex: /\b(SELECT|INSERT|UPDATE|DELETE|query|findOne|save|create)\b/gi, type: 'database', label: 'Data Interaction' },
+            
+            // Resilience Patterns
+            { regex: /\b(try|catch|throw|error|exception)\b/gi, type: 'error', label: 'Resilience Pattern' },
+            
+            // Identity Verification
+            { regex: /\b(auth|login|logout|token|jwt|session|password)\b/gi, type: 'auth', label: 'Identity Verification' },
+            
+            // Behavior Configuration
+            { regex: /\b(config|env|process\.env|settings|options)\b/gi, type: 'config', label: 'Behavior Configuration' },
+            
+            // Infrastructure Declaration
+            { regex: /\b(terraform|pulumi|cloudformation|aws_|azure_|gcp_|resource|provider)\b/gi, type: 'iac', label: 'Infrastructure Declaration' },
+            
+            // Cloud Service Intent
+            { regex: /\b(s3|ec2|lambda|rds|dynamodb|sqs|sns|cloudwatch|ecs|eks|fargate)\b/gi, type: 'cloud', label: 'Cloud Service Intent' },
+            
+            // Orchestration Intent
+            { regex: /\b(docker|kubernetes|k8s|pod|deployment|service|ingress|helm)\b/gi, type: 'container', label: 'Orchestration Intent' },
+            
+            // Compute Requirements
+            { regex: /\b(cpu|memory|gpu|instance|cluster|node|worker|scale)\b/gi, type: 'compute', label: 'Compute Requirement' },
+            
+            // Data Persistence Intent
+            { regex: /\b(bucket|volume|disk|storage|backup|snapshot|archive)\b/gi, type: 'storage', label: 'Data Persistence Intent' },
+            
+            // Visibility Intent
+            { regex: /\b(metrics|logs|traces|alert|monitor|dashboard|prometheus|grafana)\b/gi, type: 'observability', label: 'Visibility Intent' },
+            
+            // Resource Lifecycle Intent
+            { regex: /\b(create|destroy|provision|deprovision|scale_up|scale_down|terminate)\b/gi, type: 'lifecycle', label: 'Resource Lifecycle Intent' },
+            
+            // Economic Considerations
+            { regex: /\b(cost|billing|budget|pricing|reserved|spot|savings)\b/gi, type: 'cost', label: 'Economic Consideration' },
+            
+            // Security Boundaries
+            { regex: /\b(iam|role|policy|security_group|vpc|encryption|compliance)\b/gi, type: 'security', label: 'Security Boundary' },
+            
+            // Intelligence Infrastructure
+            { regex: /\b(model|training|inference|gpu_cluster|sagemaker|ml_pipeline)\b/gi, type: 'ml_infra', label: 'Intelligence Infrastructure' },
+            
+            // Purpose-Driven Metadata (COSCA-specific)
+            { regex: /purpose\s*[:=]\s*["']([^"']+)["']/gi, type: 'purpose', label: 'Declared Purpose' },
+            { regex: /expiry\s*[:=]\s*["']([^"']+)["']/gi, type: 'expiry', label: 'Lifecycle Expectation' },
+            { regex: /owner\s*[:=]\s*["']([^"']+)["']/gi, type: 'owner', label: 'Responsibility Assignment' }
+        ];
     }
 
     scanDocument(document: vscode.TextDocument): void {
-        const text = document.getText();
-        const tags = this.extractSemanticTags(text, document.languageId);
+        const documentUri = document.uri.toString();
         
-        this.tags.set(document.uri.toString(), tags);
-        this.updateDecorations(document);
-        
-        // Send telemetry
-        this.telemetryService.trackScan(document.languageId, tags);
+        // Clear existing debounce timer
+        const existingTimer = this.debounceTimers.get(documentUri);
+        if (existingTimer) {
+            clearTimeout(existingTimer);
+        }
+
+        // Debounce the scan operation
+        const timer = setTimeout(() => {
+            this.performScan(document);
+            this.debounceTimers.delete(documentUri);
+        }, this.config.analysis.debounceDelay);
+
+        this.debounceTimers.set(documentUri, timer);
     }
 
-    private extractSemanticTags(text: string, languageId: string): SemanticTag[] {
+    private async performScan(document: vscode.TextDocument): Promise<void> {
+        try {
+            const documentUri = document.uri.toString();
+            const text = document.getText();
+
+            // Input validation
+            if (!text || text.length === 0) {
+                return;
+            }
+
+            if (text.length > this.config.analysis.maxFileSize) {
+                console.warn(`File too large for semantic analysis: ${text.length} bytes`);
+                return;
+            }
+
+            // Check cache first
+            const cacheKey = this.generateCacheKey(documentUri, text);
+            let tags = this.cache.get(cacheKey);
+
+            if (!tags) {
+                // Perform analysis with timeout
+                const analysisPromise = this.extractSemanticTags(text, document.languageId);
+                const timeoutPromise = new Promise<SemanticTag[]>((_, reject) => {
+                    setTimeout(() => reject(new Error('Analysis timeout')), this.config.performance.maxAnalysisTime);
+                });
+
+                tags = await Promise.race([analysisPromise, timeoutPromise]);
+                
+                // Cache the results
+                this.cache.set(cacheKey, tags);
+            }
+
+            this.updateDecorations(document, tags);
+            
+            // Send telemetry (async, don't wait)
+            this.telemetryService.trackScan(document.languageId, tags).catch(error => {
+                console.warn('Failed to send telemetry:', error);
+            });
+
+        } catch (error) {
+            const classifiedError = ErrorClassifier.classify(error);
+            console.error('Failed to perform semantic scan:', classifiedError.message);
+        }
+    }
+
+    private generateCacheKey(uri: string, text: string): string {
+        // Create a hash-like key based on URI and content
+        const contentHash = this.simpleHash(text);
+        return `${uri}:${contentHash}`;
+    }
+
+    private simpleHash(str: string): string {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        return hash.toString(36);
+    }
+
+    private async extractSemanticTags(text: string, languageId: string): Promise<SemanticTag[]> {
         const tags: SemanticTag[] = [];
         const lines = text.split('\n');
 
+        // Use compiled patterns for better performance
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             
-            // External Communication Intent
-            this.findPattern(line, i, /\b(fetch|axios|http\.get|http\.post|XMLHttpRequest)\b/gi, 'network', 'External Communication', tags);
-            
-            // Development Insights
-            this.findPattern(line, i, /\b(console\.log|console\.error|console\.warn|print|println|debugger)\b/gi, 'debug', 'Development Insight', tags);
-            
-            // Future Intentions
-            this.findPattern(line, i, /\b(TODO|FIXME|HACK|XXX|NOTE)\b/gi, 'todo', 'Future Intention', tags);
-            
-            // Data Interactions
-            this.findPattern(line, i, /\b(SELECT|INSERT|UPDATE|DELETE|query|findOne|save|create)\b/gi, 'database', 'Data Interaction', tags);
-            
-            // Resilience Patterns
-            this.findPattern(line, i, /\b(try|catch|throw|error|exception)\b/gi, 'error', 'Resilience Pattern', tags);
-            
-            // Identity Verification
-            this.findPattern(line, i, /\b(auth|login|logout|token|jwt|session|password)\b/gi, 'auth', 'Identity Verification', tags);
-            
-            // Behavior Configuration
-            this.findPattern(line, i, /\b(config|env|process\.env|settings|options)\b/gi, 'config', 'Behavior Configuration', tags);
-            
-            // Infrastructure Declaration
-            this.findPattern(line, i, /\b(terraform|pulumi|cloudformation|aws_|azure_|gcp_|resource|provider)\b/gi, 'iac', 'Infrastructure Declaration', tags);
-            
-            // Cloud Service Intent
-            this.findPattern(line, i, /\b(s3|ec2|lambda|rds|dynamodb|sqs|sns|cloudwatch|ecs|eks|fargate)\b/gi, 'cloud', 'Cloud Service Intent', tags);
-            
-            // Orchestration Intent
-            this.findPattern(line, i, /\b(docker|kubernetes|k8s|pod|deployment|service|ingress|helm)\b/gi, 'container', 'Orchestration Intent', tags);
-            
-            // Compute Requirements
-            this.findPattern(line, i, /\b(cpu|memory|gpu|instance|cluster|node|worker|scale)\b/gi, 'compute', 'Compute Requirement', tags);
-            
-            // Data Persistence Intent
-            this.findPattern(line, i, /\b(bucket|volume|disk|storage|backup|snapshot|archive)\b/gi, 'storage', 'Data Persistence Intent', tags);
-            
-            // Visibility Intent
-            this.findPattern(line, i, /\b(metrics|logs|traces|alert|monitor|dashboard|prometheus|grafana)\b/gi, 'observability', 'Visibility Intent', tags);
-            
-            // Resource Lifecycle Intent
-            this.findPattern(line, i, /\b(create|destroy|provision|deprovision|scale_up|scale_down|terminate)\b/gi, 'lifecycle', 'Resource Lifecycle Intent', tags);
-            
-            // Economic Considerations
-            this.findPattern(line, i, /\b(cost|billing|budget|pricing|reserved|spot|savings)\b/gi, 'cost', 'Economic Consideration', tags);
-            
-            // Security Boundaries
-            this.findPattern(line, i, /\b(iam|role|policy|security_group|vpc|encryption|compliance)\b/gi, 'security', 'Security Boundary', tags);
-            
-            // Intelligence Infrastructure
-            this.findPattern(line, i, /\b(model|training|inference|gpu_cluster|sagemaker|ml_pipeline)\b/gi, 'ml_infra', 'Intelligence Infrastructure', tags);
-            
-            // Purpose-Driven Metadata (COSCA-specific)
-            this.findPattern(line, i, /purpose\s*[:=]\s*["']([^"']+)["']/gi, 'purpose', 'Declared Purpose', tags);
-            this.findPattern(line, i, /expiry\s*[:=]\s*["']([^"']+)["']/gi, 'expiry', 'Lifecycle Expectation', tags);
-            this.findPattern(line, i, /owner\s*[:=]\s*["']([^"']+)["']/gi, 'owner', 'Responsibility Assignment', tags);
+            for (const pattern of this.compiledPatterns) {
+                this.findPatternOptimized(line, i, pattern, tags);
+            }
         }
 
         return tags;
     }
 
-    private findPattern(line: string, lineNumber: number, pattern: RegExp, type: string, label: string, tags: SemanticTag[]): void {
+    private findPatternOptimized(line: string, lineNumber: number, pattern: CompiledPattern, tags: SemanticTag[]): void {
+        // Reset regex lastIndex to ensure consistent matching
+        pattern.regex.lastIndex = 0;
+        
         let match;
-        while ((match = pattern.exec(line)) !== null) {
+        while ((match = pattern.regex.exec(line)) !== null) {
             tags.push({
-                type,
-                label,
+                type: pattern.type,
+                label: pattern.label,
                 line: lineNumber,
                 column: match.index,
                 length: match[0].length,
-                confidence: 0.8
+                confidence: this.config.analysis.confidenceThreshold
             });
+            
+            // Prevent infinite loop for global regexes
+            if (!pattern.regex.global) {
+                break;
+            }
         }
     }
 
-    private updateDecorations(document: vscode.TextDocument): void {
+    private updateDecorations(document: vscode.TextDocument, tags: SemanticTag[]): void {
         const editor = vscode.window.activeTextEditor;
         if (!editor || editor.document !== document) {
             return;
         }
 
-        const tags = this.tags.get(document.uri.toString()) || [];
-        const decorations: vscode.DecorationOptions[] = tags.map(tag => ({
-            range: new vscode.Range(tag.line, tag.column, tag.line, tag.column + tag.length),
-            hoverMessage: `**${tag.label}** (${tag.type})`
-        }));
+        try {
+            const decorations: vscode.DecorationOptions[] = tags.map(tag => ({
+                range: new vscode.Range(
+                    Math.max(0, tag.line),
+                    Math.max(0, tag.column),
+                    Math.max(0, tag.line),
+                    Math.max(0, tag.column + tag.length)
+                ),
+                hoverMessage: `**${tag.label}** (${tag.type}) - Confidence: ${Math.round(tag.confidence * 100)}%`
+            }));
 
-        editor.setDecorations(this.decorationType, decorations);
+            editor.setDecorations(this.decorationType, decorations);
+        } catch (error) {
+            console.error('Failed to update decorations:', error);
+        }
     }
 
     showInsights(): void {
@@ -142,8 +266,16 @@ export class SemanticTagger {
     }
 
     private generateInsights(): any {
+        // Get all cached tags
         const allTags: SemanticTag[] = [];
-        this.tags.forEach(tags => allTags.push(...tags));
+        const cacheKeys = this.cache.keys();
+        
+        for (const key of cacheKeys) {
+            const tags = this.cache.get(key);
+            if (tags) {
+                allTags.push(...tags);
+            }
+        }
 
         const tagCounts = allTags.reduce((acc, tag) => {
             acc[tag.type] = (acc[tag.type] || 0) + 1;
@@ -155,8 +287,30 @@ export class SemanticTagger {
             tagCounts,
             topPatterns: Object.entries(tagCounts)
                 .sort(([,a], [,b]) => b - a)
-                .slice(0, 5)
+                .slice(0, 5),
+            cacheStats: {
+                size: this.cache.size(),
+                maxSize: this.config.analysis.maxCacheSize
+            }
         };
+    }
+
+    dispose(): void {
+        // Clear all debounce timers
+        for (const timer of this.debounceTimers.values()) {
+            clearTimeout(timer);
+        }
+        this.debounceTimers.clear();
+
+        // Clear cache
+        this.cache.clear();
+
+        // Dispose of decorations
+        this.decorationType.dispose();
+
+        // Dispose of VSCode disposables
+        this.disposables.forEach(d => d.dispose());
+        this.disposables = [];
     }
 
     private getWebviewContent(insights: any): string {
