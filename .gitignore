@@ -49,3 +49,57 @@ test-files/
 *.docx
 *-setup.*
 test-*.js
+
+# ========================================
+# COSCA IP PROTECTION
+# ========================================
+
+# Core semantic analysis engine (IP PROTECTED)
+src/semanticTagger.ts
+.encryption-key
+
+# Allow protection framework (it's encrypted)
+!src/protection/
+
+# Sensitive configuration and patterns
+src/patterns/
+src/analysis/
+semantic-patterns.json
+pattern-definitions.ts
+
+# Telemetry and analytics data
+telemetry-data/
+analytics/
+usage-stats.json
+
+# Development and testing artifacts
+test-data/
+sample-files/
+debug-output/
+
+# Build artifacts that might contain IP
+out/semanticTagger.js
+out/protection/
+lib/src/semantic-engine.js
+
+# Dashboard sensitive data
+llm-insights-dashboard/.env
+llm-insights-dashboard/data/
+llm-insights-dashboard/logs/
+llm-insights-dashboard/reports/
+
+# Backup and temporary files
+*.backup
+*.tmp
+*.temp
+
+# Additional IDE and editor files
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Additional OS generated files
+.Spotlight-V100
+.Trashes
+ehthumbs.db

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COSCA Semantic Insights Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            color: #334155;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .card h3 {
+            color: #1e293b;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-value {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .score {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .score.excellent { background: #dcfce7; color: #166534; }
+        .score.good { background: #dbeafe; color: #1d4ed8; }
+        .score.warning { background: #fef3c7; color: #92400e; }
+        .score.critical { background: #fecaca; color: #dc2626; }
+
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+            box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: white;
+            color: #64748b;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .tab:hover:not(.active) {
+            background: #f1f5f9;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .recommendation {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .recommendation h4 {
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .recommendation p {
+            color: #64748b;
+            line-height: 1.5;
+            margin-bottom: 0.5rem;
+        }
+
+        .priority {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .priority.high { background: #fecaca; color: #dc2626; }
+        .priority.medium { background: #fef3c7; color: #92400e; }
+        .priority.low { background: #dcfce7; color: #166534; }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
+        }
+
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .actions {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a67d8;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 1rem;
+        }
+
+        .alert-badge {
+            background: #dc2626;
+            color: white;
+            border-radius: 50%;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 COSCA Semantic Insights</h1>
+        <p>AI-Powered Code Analysis & Recommendations Dashboard</p>
+    </div>
+
+    <div class="container">
+        <div class="actions">
+            <button class="btn btn-primary" onclick="refreshInsights()">🔄 Refresh Insights</button>
+            <button class="btn btn-secondary" onclick="generateReport()">📊 Generate Report</button>
+            <button class="btn btn-secondary" onclick="checkAlerts()">🚨 Check Alerts <span id="alertBadge" class="alert-badge" style="display: none;">0</span></button>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <h3>📈 Overall Health</h3>
+                <div id="healthMetrics">
+                    <div class="loading">Loading health metrics...</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🔒 Security Score</h3>
+                <div id="securityMetrics">
+                    <div class="loading">Loading security data...</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🏗️ Architecture Health</h3>
+                <div id="architectureMetrics">
+                    <div class="loading">Loading architecture data...</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>⚡ Developer Productivity</h3>
+                <div id="productivityMetrics">
+                    <div class="loading">Loading productivity data...</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🔧 Technical Debt</h3>
+                <div id="debtMetrics">
+                    <div class="loading">Loading debt analysis...</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📊 Usage Statistics</h3>
+                <div id="usageMetrics">
+                    <div class="loading">Loading usage data...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('recommendations')">💡 Recommendations</button>
+            <button class="tab" onclick="showTab('insights')">🔍 Insights</button>
+            <button class="tab" onclick="showTab('trends')">📈 Trends</button>
+            <button class="tab" onclick="showTab('alerts')">🚨 Alerts</button>
+        </div>
+
+        <div id="recommendations" class="tab-content active">
+            <div class="card">
+                <h3>🎯 Code Quality Recommendations</h3>
+                <div id="codeQualityRecs">
+                    <div class="loading">Loading recommendations...</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="insights" class="tab-content">
+            <div class="card">
+                <h3>🧠 AI-Generated Insights</h3>
+                <div id="aiInsights">
+                    <div class="loading">Loading insights...</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="trends" class="tab-content">
+            <div class="card">
+                <h3>📊 Trend Analysis</h3>
+                <div class="chart-container">
+                    <canvas id="trendsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="alerts" class="tab-content">
+            <div class="card">
+                <h3>⚠️ Active Alerts</h3>
+                <div id="activeAlerts">
+                    <div class="loading">Loading alerts...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>

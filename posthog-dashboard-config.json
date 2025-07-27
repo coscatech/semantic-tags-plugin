@@ -1,0 +1,67 @@
+{
+  "dashboard_name": "COSCA Semantic Tagging Analytics",
+  "description": "Monitor semantic tagging extension usage and effectiveness",
+  "widgets": [
+    {
+      "name": "Daily Active Users",
+      "type": "line_chart",
+      "query": {
+        "event": "extension_activated",
+        "group_by": "date",
+        "metric": "unique_users",
+        "unique_by": "properties.session_id"
+      }
+    },
+    {
+      "name": "File Types Analyzed",
+      "type": "bar_chart",
+      "query": {
+        "event": "semantic_scan",
+        "group_by": "properties.language",
+        "metric": "count"
+      }
+    },
+    {
+      "name": "Infrastructure Detection Rate",
+      "type": "pie_chart",
+      "query": {
+        "event": "semantic_scan",
+        "group_by": "properties.is_infra_file",
+        "metric": "count"
+      }
+    },
+    {
+      "name": "Average Tags Per File",
+      "type": "number",
+      "query": {
+        "event": "semantic_scan",
+        "metric": "average",
+        "property": "properties.total_tags"
+      }
+    },
+    {
+      "name": "COSCA Readiness Score Trend",
+      "type": "line_chart",
+      "query": {
+        "event": "semantic_scan",
+        "group_by": "date",
+        "metric": "average",
+        "formula": "properties.infra_tag_count + properties.purpose_tags + properties.expiry_tags + properties.owner_tags"
+      }
+    },
+    {
+      "name": "Purpose Metadata Adoption",
+      "type": "line_chart",
+      "query": {
+        "event": "semantic_scan",
+        "group_by": "date",
+        "metric": "percentage",
+        "filter": "properties.has_purpose_metadata = true"
+      }
+    }
+  ],
+  "filters": {
+    "date_range": "last_7_days",
+    "exclude_test_data": true
+  }
+}

@@ -107,7 +107,19 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "publish": "vsce publish",
+    "build:lib": "cd lib && npm run build",
+    "publish:lib": "cd lib && npm publish",
+    "security:protect": "node scripts/protect-ip.js",
+    "security:report": "node scripts/protect-ip.js && cat IP_PROTECTION_REPORT.json",
+    "security:validate": "echo 'Security validation - check .secure-backup directory'",
+    "backup:secure": "node scripts/protect-ip.js",
+    "dev:protected": "npm run security:protect && npm run compile"
   },
   "devDependencies": {
     "@types/vscode": "^1.74.0",

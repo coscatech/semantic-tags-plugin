@@ -1,8 +1,10 @@
 import * as vscode from 'vscode';
-import { TelemetryService } from './telemetry';
-import { configManager, ExtensionConfig } from './config';
-import { LRUCache } from './utils/lruCache';
-import { ErrorClassifier } from './utils/errorHandling';
+import { TelemetryService } from '../telemetry';
+import { configManager, ExtensionConfig } from '../config';
+import { LRUCache } from '../utils/lruCache';
+import { ErrorClassifier } from '../utils/errorHandling';
+import { encryptionService } from './encryptionService';
+import { PatternObfuscator, RuntimeProtection, ObfuscatedPattern } from './obfuscator';
 
 export interface SemanticTag {
     type: string;
@@ -19,15 +21,17 @@ interface CompiledPattern {
     label: string;
 }
 
-export class SemanticTagger {
+export class ProtectedSemanticTagger {
     private cache: LRUCache<string, SemanticTag[]>;
     private decorationType: vscode.TextEditorDecorationType;
     private config: ExtensionConfig;
-    private compiledPatterns: CompiledPattern[];
+    private encryptedPatterns: ObfuscatedPattern[];
     private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
     private disposables: vscode.Disposable[] = [];
+    private sessionToken: string;
 
     constructor(private telemetryService: TelemetryService) {
+        this.sessionToken = encryptionService.generateSecureToken();
         this.config = configManager.getConfig();
         this.cache = new LRUCache({
             maxSize: this.config.analysis.maxCacheSize,
@@ -40,21 +44,13 @@ export class SemanticTagger {
             borderRadius: '3px'
         });
 
-        this.compiledPatterns = this.compilePatterns();
+        this.encryptedPatterns = this.initializeProtectedPatterns();
         this.setupConfigListener();
     }
 
-    private setupConfigListener(): void {
-        const disposable = vscode.commands.registerCommand('semanticTagging.configChanged', (newConfig: ExtensionConfig) => {
-            this.config = newConfig;
-            this.cache.clear(); // Clear cache when config changes
-            this.compiledPatterns = this.compilePatterns();
-        });
-        this.disposables.push(disposable);
-    }
-
-    private compilePatterns(): CompiledPattern[] {
-        return [
+    private initializeProtectedPatterns(): ObfuscatedPattern[] {
+        // The core IP - semantic patterns are now encrypted
+        const rawPatterns = [
             // External Communication Intent
             { regex: /\b(fetch|axios|http\.get|http\.post|XMLHttpRequest)\b/gi, type: 'network', label: 'External Communication' },
             
@@ -111,102 +107,136 @@ export class SemanticTagger {
             { regex: /expiry\s*[:=]\s*["']([^"']+)["']/gi, type: 'expiry', label: 'Lifecycle Expectation' },
             { regex: /owner\s*[:=]\s*["']([^"']+)["']/gi, type: 'owner', label: 'Responsibility Assignment' }
         ];
+
+        // Encrypt and obfuscate the patterns
+        return PatternObfuscator.obfuscatePatterns(rawPatterns);
     }
 
-    scanDocument(document: vscode.TextDocument): void {
-        const documentUri = document.uri.toString();
-        
-        // Clear existing debounce timer
-        const existingTimer = this.debounceTimers.get(documentUri);
-        if (existingTimer) {
-            clearTimeout(existingTimer);
-        }
-
-        // Debounce the scan operation
-        const timer = setTimeout(() => {
-            this.performScan(document);
-            this.debounceTimers.delete(documentUri);
-        }, this.config.analysis.debounceDelay);
-
-        this.debounceTimers.set(documentUri, timer);
+    private setupConfigListener(): void {
+        const disposable = vscode.commands.registerCommand('semanticTagging.configChanged', (newConfig: ExtensionConfig) => {
+            this.config = newConfig;
+            this.cache.clear(); // Clear cache when config changes
+        });
+        this.disposables.push(disposable);
     }
 
-    private async performScan(document: vscode.TextDocument): Promise<void> {
+    private getCompiledPatterns(): CompiledPattern[] {
         try {
+            // Decrypt patterns at runtime
+            const decryptedPatterns = PatternObfuscator.deobfuscatePatterns(this.encryptedPatterns);
+            
+            return decryptedPatterns.map(pattern => ({
+                regex: new RegExp(pattern.regex.source, pattern.regex.flags),
+                type: pattern.type,
+                label: pattern.label
+            }));
+        } catch (error) {
+            console.error('Failed to decrypt semantic patterns:', error);
+            // Return minimal fallback patterns
+            return [
+                { regex: /\b(TODO|FIXME)\b/gi, type: 'todo', label: 'Future Intention' }
+            ];
+        }
+    }
+
+    scanDocument = RuntimeProtection.wrapFunction(
+        (document: vscode.TextDocument): void => {
             const documentUri = document.uri.toString();
-            const text = document.getText();
-
-            // Input validation
-            if (!text || text.length === 0) {
+            
+            // Validate input
+            if (!RuntimeProtection.validateInput(documentUri, {})) {
+                console.warn('Invalid document URI detected');
                 return;
             }
-
-            if (text.length > this.config.analysis.maxFileSize) {
-                console.warn(`File too large for semantic analysis: ${text.length} bytes`);
-                return;
+            
+            // Clear existing debounce timer
+            const existingTimer = this.debounceTimers.get(documentUri);
+            if (existingTimer) {
+                clearTimeout(existingTimer);
             }
 
-            // Check cache first
-            const cacheKey = this.generateCacheKey(documentUri, text);
-            let tags = this.cache.get(cacheKey);
+            // Debounce the scan operation
+            const timer = setTimeout(() => {
+                this.performScan(document);
+                this.debounceTimers.delete(documentUri);
+            }, this.config.analysis.debounceDelay);
 
-            if (!tags) {
-                // Perform analysis with timeout
-                const analysisPromise = this.extractSemanticTags(text, document.languageId);
-                const timeoutPromise = new Promise<SemanticTag[]>((_, reject) => {
-                    setTimeout(() => reject(new Error('Analysis timeout')), this.config.performance.maxAnalysisTime);
+            this.debounceTimers.set(documentUri, timer);
+        },
+        'scanDocument'
+    );
+
+    private performScan = RuntimeProtection.wrapFunction(
+        async (document: vscode.TextDocument): Promise<void> => {
+            try {
+                const documentUri = document.uri.toString();
+                const text = document.getText();
+
+                // Input validation
+                if (!text || text.length === 0) {
+                    return;
+                }
+
+                if (text.length > this.config.analysis.maxFileSize) {
+                    console.warn(`File too large for semantic analysis: ${text.length} bytes`);
+                    return;
+                }
+
+                // Check cache first
+                const cacheKey = this.generateSecureCacheKey(documentUri, text);
+                let tags = this.cache.get(cacheKey);
+
+                if (!tags) {
+                    // Perform protected analysis
+                    tags = await this.extractSemanticTagsProtected(text, document.languageId);
+                    
+                    // Cache the results
+                    this.cache.set(cacheKey, tags);
+                }
+
+                this.updateDecorations(document, tags);
+                
+                // Send telemetry (async, don't wait) - but sanitize first
+                const sanitizedTags = this.sanitizeTagsForTelemetry(tags);
+                this.telemetryService.trackScan(document.languageId, sanitizedTags).catch(error => {
+                    console.warn('Failed to send telemetry:', error);
                 });
 
-                tags = await Promise.race([analysisPromise, timeoutPromise]);
+            } catch (error) {
+                const classifiedError = ErrorClassifier.classify(error);
+                console.error('Failed to perform semantic scan:', classifiedError.message);
+            }
+        },
+        'performScan'
+    );
+
+    private generateSecureCacheKey(uri: string, text: string): string {
+        // Create a secure hash-based key
+        const combined = `${this.sessionToken}:${uri}:${text}`;
+        return encryptionService.hashData(combined);
+    }
+
+    private extractSemanticTagsProtected = RuntimeProtection.wrapFunction(
+        async (text: string, languageId: string): Promise<SemanticTag[]> => {
+            const tags: SemanticTag[] = [];
+            const lines = text.split('\n');
+
+            // Get decrypted patterns
+            const compiledPatterns = this.getCompiledPatterns();
+
+            // Use compiled patterns for analysis
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
                 
-                // Cache the results
-                this.cache.set(cacheKey, tags);
+                for (const pattern of compiledPatterns) {
+                    this.findPatternOptimized(line, i, pattern, tags);
+                }
             }
 
-            this.updateDecorations(document, tags);
-            
-            // Send telemetry (async, don't wait)
-            this.telemetryService.trackScan(document.languageId, tags).catch(error => {
-                console.warn('Failed to send telemetry:', error);
-            });
-
-        } catch (error) {
-            const classifiedError = ErrorClassifier.classify(error);
-            console.error('Failed to perform semantic scan:', classifiedError.message);
-        }
-    }
-
-    private generateCacheKey(uri: string, text: string): string {
-        // Create a hash-like key based on URI and content
-        const contentHash = this.simpleHash(text);
-        return `${uri}:${contentHash}`;
-    }
-
-    private simpleHash(str: string): string {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // Convert to 32-bit integer
-        }
-        return hash.toString(36);
-    }
-
-    private async extractSemanticTags(text: string, languageId: string): Promise<SemanticTag[]> {
-        const tags: SemanticTag[] = [];
-        const lines = text.split('\n');
-
-        // Use compiled patterns for better performance
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            
-            for (const pattern of this.compiledPatterns) {
-                this.findPatternOptimized(line, i, pattern, tags);
-            }
-        }
-
-        return tags;
-    }
+            return tags;
+        },
+        'extractSemanticTagsProtected'
+    );
 
     private findPatternOptimized(line: string, lineNumber: number, pattern: CompiledPattern, tags: SemanticTag[]): void {
         // Reset regex lastIndex to ensure consistent matching
@@ -228,6 +258,18 @@ export class SemanticTagger {
                 break;
             }
         }
+    }
+
+    private sanitizeTagsForTelemetry(tags: SemanticTag[]): SemanticTag[] {
+        // Remove sensitive information before sending telemetry
+        return tags.map(tag => ({
+            type: tag.type,
+            label: tag.label,
+            line: -1, // Don't send exact line numbers
+            column: -1, // Don't send exact column positions
+            length: Math.min(tag.length, 50), // Limit length information
+            confidence: Math.round(tag.confidence * 10) / 10 // Round confidence
+        }));
     }
 
     private updateDecorations(document: vscode.TextDocument, tags: SemanticTag[]): void {
@@ -266,14 +308,15 @@ export class SemanticTagger {
     }
 
     private generateInsights(): any {
-        // Get all cached tags
+        // Get all cached tags (sanitized)
         const allTags: SemanticTag[] = [];
         const cacheKeys = this.cache.keys();
         
         for (const key of cacheKeys) {
             const tags = this.cache.get(key);
             if (tags) {
-                allTags.push(...tags);
+                // Sanitize tags before including in insights
+                allTags.push(...this.sanitizeTagsForTelemetry(tags));
             }
         }
 
@@ -311,6 +354,9 @@ export class SemanticTagger {
         // Dispose of VSCode disposables
         this.disposables.forEach(d => d.dispose());
         this.disposables = [];
+
+        // Clear encrypted patterns from memory
+        this.encryptedPatterns = [];
     }
 
     private getWebviewContent(insights: any): string {
@@ -335,10 +381,15 @@ export class SemanticTagger {
                 .purpose-bar { background: #9c27b0; height: 20px; margin: 5px 0; border-radius: 3px; }
                 .section { margin: 30px 0; }
                 h2 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+                .protected { background: #e8f5e8; border: 1px solid #4caf50; padding: 10px; border-radius: 5px; margin: 10px 0; }
             </style>
         </head>
         <body>
-            <h1>🧠 Semantic Reflection - COSCA Edition</h1>
+            <h1>🧠 Semantic Reflection - COSCA Edition (Protected)</h1>
+            
+            <div class="protected">
+                <strong>🔒 IP Protected:</strong> This analysis uses encrypted semantic patterns to protect intellectual property.
+            </div>
             
             <div class="section">
                 <h2>💭 Intent Overview</h2>

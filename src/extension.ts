@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
-import { SemanticTagger } from './semanticTagger';
+import { ProtectedSemanticTagger } from './protection/protectedSemanticTagger';
 import { TelemetryService } from './telemetry';
 import { configManager } from './config';
 
-let semanticTagger: SemanticTagger;
+let semanticTagger: ProtectedSemanticTagger;
 let telemetryService: TelemetryService;
 
 async function showPrivacyNoticeIfNeeded(context: vscode.ExtensionContext) {
@@ -39,7 +39,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     try {
         // Initialize services
         telemetryService = new TelemetryService();
-        semanticTagger = new SemanticTagger(telemetryService);
+        semanticTagger = new ProtectedSemanticTagger(telemetryService);
 
         // Show privacy notice on first run
         await showPrivacyNoticeIfNeeded(context);
