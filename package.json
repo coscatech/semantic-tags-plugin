@@ -52,7 +52,17 @@
         "semanticTagging.enableTelemetry": {
           "type": "boolean",
           "default": false,
-          "description": "Enable anonymous telemetry to help improve semantic tagging"
+          "description": "📊 We track tag types, not code. Enable to help improve pattern detection (fully anonymous)"
+        },
+        "semanticTagging.telemetryHost": {
+          "type": "string",
+          "default": "https://app.posthog.com",
+          "description": "PostHog host URL (use your self-hosted instance or default cloud)"
+        },
+        "semanticTagging.telemetryApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Custom PostHog API key for self-hosted instances (leave empty to use COSCA's default)"
         }
       }
     }

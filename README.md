@@ -109,27 +109,47 @@ The extension calculates how "COSCA-ready" your infrastructure is:
 
 ```json
 {
-  "semanticTagging.enableTelemetry": false  // Enable anonymous analytics
+  "semanticTagging.enableTelemetry": false,                    // Enable anonymous analytics
+  "semanticTagging.telemetryHost": "https://app.posthog.com",  // PostHog host (use your self-hosted instance)
+  "semanticTagging.telemetryApiKey": ""                        // Custom API key for self-hosted PostHog
 }
 ```
 
-## 📡 Telemetry & Privacy
+### 🏢 Self-Hosted PostHog for Teams
+Enterprise teams can run their own PostHog instance for complete data control:
+- **Data Sovereignty**: Keep telemetry within your infrastructure
+- **Compliance**: Meet GDPR, HIPAA, SOC2 requirements
+- **Custom Analytics**: Build team-specific dashboards
 
-### What We Collect (When Enabled)
-- Programming language types
-- Count of semantic tags by category
-- Infrastructure pattern density
-- Purpose metadata coverage
-- Session identifiers (random, not linked to users)
+See [SELF_HOSTED_TELEMETRY.md](SELF_HOSTED_TELEMETRY.md) for setup instructions.
 
-### What We DON'T Collect
-- ❌ Actual code content
-- ❌ File names or paths
-- ❌ Personal information
-- ❌ IP addresses
-- ❌ Company/project details
+## 📊 Transparent Telemetry: "We Track Tag Types, Not Code"
 
-Telemetry is **opt-in only** and helps improve infrastructure pattern detection.
+### 🔍 What We Actually Collect (When You Opt-In)
+```json
+{
+  "language": "terraform",           // File type only
+  "total_tags": 8,                  // Count of patterns found
+  "tag_counts": {                   // Pattern categories & counts
+    "iac": 3, "purpose": 2, "cloud": 3
+  },
+  "session_id": "session_abc123"    // Random identifier
+}
+```
+
+### ❌ What We NEVER Collect
+- **Your actual code** - We only count pattern types
+- **File names or paths** - No identification of your files
+- **Resource names** - We see `purpose = "something"` as just "purpose tag found"
+- **Personal info** - No names, emails, or company data
+- **Location data** - No IP addresses or geographic info
+
+### 🎯 Why This Helps COSCA
+- **Improve pattern detection** - Learn which infrastructure patterns are most common
+- **Enhance COSCA readiness** - Understand how teams adopt purpose-driven infrastructure
+- **Build better tools** - Focus development on the most-used semantic patterns
+
+**Telemetry is opt-in only** and can be disabled anytime in VSCode settings.
 
 ## 🏢 About COSCA
 

@@ -1,0 +1,250 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "COSCA Semantic Tagging Telemetry Schema",
+  "description": "Complete schema for all telemetry data collected by the COSCA Semantic Tagging extension",
+  "version": "1.0.0",
+  "type": "object",
+  "properties": {
+    "events": {
+      "type": "object",
+      "properties": {
+        "extension_activated": {
+          "description": "Fired when the VSCode extension is activated",
+          "type": "object",
+          "properties": {
+            "distinctId": {
+              "type": "string",
+              "description": "Anonymous session identifier (random, not linked to user)",
+              "pattern": "^session_[a-z0-9]+_[0-9]+$",
+              "example": "session_abc123def_1706234567890"
+            },
+            "event": {
+              "type": "string",
+              "const": "extension_activated"
+            },
+            "properties": {
+              "type": "object",
+              "properties": {
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "ISO 8601 timestamp when extension was activated"
+                },
+                "session_id": {
+                  "type": "string",
+                  "description": "Same as distinctId for correlation"
+                },
+                "vscode_version": {
+                  "type": "string",
+                  "description": "VSCode version (e.g., '1.85.0')",
+                  "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+                }
+              },
+              "required": ["timestamp", "session_id", "vscode_version"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["distinctId", "event", "properties"],
+          "additionalProperties": false
+        },
+        "semantic_scan": {
+          "description": "Fired when a file is scanned for semantic patterns",
+          "type": "object",
+          "properties": {
+            "distinctId": {
+              "type": "string",
+              "description": "Anonymous session identifier (same as extension_activated)",
+              "pattern": "^session_[a-z0-9]+_[0-9]+$"
+            },
+            "event": {
+              "type": "string",
+              "const": "semantic_scan"
+            },
+            "properties": {
+              "type": "object",
+              "properties": {
+                "language": {
+                  "type": "string",
+                  "description": "Programming language of scanned file",
+                  "enum": [
+                    "terraform",
+                    "yaml", 
+                    "javascript",
+                    "typescript",
+                    "python",
+                    "go",
+                    "json",
+                    "dockerfile",
+                    "unknown"
+                  ]
+                },
+                "total_tags": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Total number of semantic tags found in the file"
+                },
+                "tag_counts": {
+                  "type": "object",
+                  "description": "Count of each semantic tag type found",
+                  "properties": {
+                    "iac": {"type": "integer", "minimum": 0, "description": "Infrastructure as Code patterns"},
+                    "cloud": {"type": "integer", "minimum": 0, "description": "Cloud service patterns"},
+                    "container": {"type": "integer", "minimum": 0, "description": "Container/Kubernetes patterns"},
+                    "compute": {"type": "integer", "minimum": 0, "description": "Compute resource patterns"},
+                    "storage": {"type": "integer", "minimum": 0, "description": "Storage operation patterns"},
+                    "observability": {"type": "integer", "minimum": 0, "description": "Monitoring/observability patterns"},
+                    "lifecycle": {"type": "integer", "minimum": 0, "description": "Resource lifecycle patterns"},
+                    "cost": {"type": "integer", "minimum": 0, "description": "Cost management patterns"},
+                    "security": {"type": "integer", "minimum": 0, "description": "Security/compliance patterns"},
+                    "ml_infra": {"type": "integer", "minimum": 0, "description": "ML infrastructure patterns"},
+                    "purpose": {"type": "integer", "minimum": 0, "description": "Resource purpose metadata"},
+                    "expiry": {"type": "integer", "minimum": 0, "description": "Resource expiry metadata"},
+                    "owner": {"type": "integer", "minimum": 0, "description": "Resource owner metadata"},
+                    "network": {"type": "integer", "minimum": 0, "description": "Network call patterns"},
+                    "debug": {"type": "integer", "minimum": 0, "description": "Debug statement patterns"},
+                    "todo": {"type": "integer", "minimum": 0, "description": "TODO/FIXME patterns"},
+                    "database": {"type": "integer", "minimum": 0, "description": "Database operation patterns"},
+                    "error": {"type": "integer", "minimum": 0, "description": "Error handling patterns"},
+                    "auth": {"type": "integer", "minimum": 0, "description": "Authentication patterns"},
+                    "config": {"type": "integer", "minimum": 0, "description": "Configuration patterns"}
+                  },
+                  "additionalProperties": false
+                },
+                "infra_tag_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Total count of infrastructure-related tags"
+                },
+                "is_infra_file": {
+                  "type": "boolean",
+                  "description": "Whether the file contains infrastructure patterns"
+                },
+                "has_purpose_metadata": {
+                  "type": "boolean",
+                  "description": "Whether the file contains COSCA purpose-driven metadata"
+                },
+                "purpose_tags": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Count of purpose metadata tags"
+                },
+                "expiry_tags": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Count of expiry metadata tags"
+                },
+                "owner_tags": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Count of owner metadata tags"
+                },
+                "aws_tags": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Count of AWS-specific patterns (subset of cloud tags)"
+                },
+                "iac_tags": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Count of Infrastructure as Code patterns"
+                },
+                "container_tags": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Count of container/orchestration patterns"
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "ISO 8601 timestamp when scan occurred"
+                },
+                "session_id": {
+                  "type": "string",
+                  "description": "Session identifier for correlation"
+                }
+              },
+              "required": [
+                "language",
+                "total_tags", 
+                "tag_counts",
+                "infra_tag_count",
+                "is_infra_file",
+                "has_purpose_metadata",
+                "purpose_tags",
+                "expiry_tags", 
+                "owner_tags",
+                "timestamp",
+                "session_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": ["distinctId", "event", "properties"],
+          "additionalProperties": false
+        }
+      }
+    }
+  },
+  "privacy": {
+    "data_collected": [
+      "Programming language types (terraform, javascript, etc.)",
+      "Count of semantic patterns by category",
+      "Infrastructure pattern density metrics",
+      "Purpose-driven metadata coverage",
+      "Anonymous session identifiers",
+      "Timestamps of usage events",
+      "VSCode version information"
+    ],
+    "data_not_collected": [
+      "Actual source code content",
+      "File names or file paths", 
+      "Personal identifiable information (PII)",
+      "IP addresses or location data",
+      "Company or project names",
+      "Specific resource names or values",
+      "Authentication tokens or credentials",
+      "Any data that could identify individual users"
+    ],
+    "data_retention": "Data is retained according to PostHog's standard retention policy",
+    "data_sharing": "Data is not shared with third parties beyond PostHog analytics service",
+    "opt_out": "Users can disable telemetry at any time via VSCode settings: semanticTagging.enableTelemetry = false"
+  },
+  "examples": {
+    "extension_activated": {
+      "distinctId": "session_abc123def_1706234567890",
+      "event": "extension_activated",
+      "properties": {
+        "timestamp": "2025-01-26T10:30:00.000Z",
+        "session_id": "session_abc123def_1706234567890",
+        "vscode_version": "1.85.0"
+      }
+    },
+    "semantic_scan": {
+      "distinctId": "session_abc123def_1706234567890", 
+      "event": "semantic_scan",
+      "properties": {
+        "language": "terraform",
+        "total_tags": 12,
+        "tag_counts": {
+          "iac": 4,
+          "cloud": 2,
+          "storage": 1,
+          "purpose": 2,
+          "expiry": 2,
+          "owner": 1
+        },
+        "infra_tag_count": 7,
+        "is_infra_file": true,
+        "has_purpose_metadata": true,
+        "purpose_tags": 2,
+        "expiry_tags": 2,
+        "owner_tags": 1,
+        "aws_tags": 2,
+        "iac_tags": 4,
+        "container_tags": 0,
+        "timestamp": "2025-01-26T10:31:15.000Z",
+        "session_id": "session_abc123def_1706234567890"
+      }
+    }
+  }
+}

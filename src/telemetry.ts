@@ -16,23 +16,40 @@ export class TelemetryService {
         const config = vscode.workspace.getConfiguration('semanticTagging');
         const telemetryEnabled = config.get<boolean>('enableTelemetry', false);
 
-        console.log('Semantic Tagging: Telemetry enabled:', telemetryEnabled);
-
+        console.log('🔍 Semantic Tagging: Telemetry enabled:', telemetryEnabled);
+        
         if (telemetryEnabled) {
+            console.log('📊 TRANSPARENCY: We track tag types, not code content');
+            console.log('   ✅ Collected: Pattern counts (iac: 3, purpose: 2, etc.)');
+            console.log('   ❌ Never collected: Your actual code, file names, or personal data');
+            
             try {
-                // COSCA PostHog API key - intentionally hardcoded for telemetry collection
-                // This allows COSCA to gather anonymous usage analytics from extension users
-                this.posthog = new PostHog('phc_QoS8jgQeFmZyZ9zktO2P49DseXvcj1Ai5IWww6O4URG', {
-                    host: 'https://app.posthog.com',
+                // Get custom telemetry settings for self-hosted PostHog
+                const customHost = config.get<string>('telemetryHost', 'https://app.posthog.com');
+                const customApiKey = config.get<string>('telemetryApiKey', '');
+                
+                // Use custom API key if provided, otherwise use COSCA's default
+                const apiKey = customApiKey || 'phc_QoS8jgQeFmZyZ9zktO2P49DseXvcj1Ai5IWww6O4URG';
+                
+                this.posthog = new PostHog(apiKey, {
+                    host: customHost,
                     flushAt: 1, // Send events immediately for testing
                     flushInterval: 1000 // Flush every second
                 });
                 this.isInitialized = true;
-                console.log('Semantic Tagging: PostHog initialized successfully');
+                console.log(`✅ Semantic Tagging: Telemetry initialized (${customHost})`);
+                
+                if (customApiKey) {
+                    console.log('🏢 Using custom PostHog instance for team telemetry');
+                } else {
+                    console.log('☁️ Using COSCA cloud telemetry to improve semantic patterns');
+                }
             } catch (error) {
-                console.error('Semantic Tagging: Failed to initialize PostHog:', error);
+                console.error('❌ Semantic Tagging: Failed to initialize telemetry:', error);
                 this.posthog = null;
             }
+        } else {
+            console.log('🔒 Semantic Tagging: Telemetry disabled - no data collected');
         }
     }
 
@@ -81,13 +98,19 @@ export class TelemetryService {
             }
         };
 
-        console.log('Semantic Tagging: Sending telemetry event:', eventData);
+        console.log('📊 Sending anonymous pattern data:', {
+            language: eventData.properties.language,
+            totalTags: eventData.properties.total_tags,
+            infraTags: eventData.properties.infra_tag_count,
+            hasPurpose: eventData.properties.has_purpose_metadata
+        });
+        console.log('🔒 Privacy: No code content, file names, or personal data sent');
 
         try {
             this.posthog.capture(eventData);
-            console.log('Semantic Tagging: Telemetry event sent successfully');
+            console.log('✅ Pattern data sent successfully - helps improve COSCA!');
         } catch (error) {
-            console.error('Semantic Tagging: Failed to send telemetry:', error);
+            console.error('❌ Failed to send pattern data:', error);
         }
     }
 
